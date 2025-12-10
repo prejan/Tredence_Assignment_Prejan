@@ -68,7 +68,7 @@ ai_workflow_engine/
 #  Installation
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/prejan/Tredence_Assignment_Prejan.git
 cd ai_workflow_engine
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
