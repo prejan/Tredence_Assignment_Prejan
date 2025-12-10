@@ -1,0 +1,113 @@
+<!-- visualizer.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Workflow Graph Visualizer</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin:0; padding:0; height:100vh; display:flex; }
+    #left { width:420px; padding:16px; box-sizing:border-box; border-right:1px solid #ddd; overflow:auto; }
+    #right { flex:1; position:relative; }
+    textarea { width:100%; height:calc(100vh - 220px); box-sizing:border-box; font-family:monospace; font-size:13px; padding:8px; }
+    #controls { margin-top:12px; display:flex; gap:8px; }
+    button { padding:8px 12px; cursor:pointer; }
+    #network { height:100%; width:100%; }
+    .hint { font-size:13px; color:#666; margin-top:8px; }
+  </style>
+  <!-- vis-network CDN -->
+  <script src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+</head>
+<body>
+  <div id="left">
+    <h3>AI Workflow Graph Visualizer</h3>
+    <div class="hint">Paste JSON below and click <strong>Render</strong>.</div>
+
+    <textarea id="jsonInput">{ "nodes":[ {"id":"n1","label":"extract\n(count)","color":"#e3f2fd"},{"id":"n2","label":"complexity\n(score)","color":"#e8f5e9"},{"id":"n3","label":"issues\n(count)","color":"#fff3e0"},{"id":"n4","label":"improve\n(score)","color":"#f3e5f5"} ], "edges":[ {"from":"n1","to":"n2"}, {"from":"n2","to":"n3"}, {"from":"n3","to":"n4"} ] }</textarea>
+
+    <div id="controls">
+      <button id="renderBtn">Render</button>
+      <button id="layoutBtn">Auto Layout</button>
+      <button id="downloadBtn">Download PNG</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <strong>Examples</strong>
+      <ul>
+        <li>Use newline `\n` in labels to show stacked lines.</li>
+        <li>Colors supported via node `color` property.</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:12px">
+      <strong>Export / Save</strong>
+      <div class="hint">Click <em>Download PNG</em> to capture the canvas.</div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div id="network"></div>
+  </div>
+
+<script>
+  const container = document.getElementById('network');
+  let network = null;
+
+  function renderGraph(input) {
+    let data;
+    try {
+      data = (typeof input === 'string') ? JSON.parse(input) : input;
+    } catch (e) {
+      alert('Invalid JSON: ' + e.message);
+      return;
+    }
+
+    // prepare nodes + edges in vis format
+    const visNodes = (data.nodes || []).map(n => ({
+      id: n.id,
+      label: n.label || n.id,
+      color: n.color || undefined,
+      shape: 'box',
+      font: { multi: 'html' }
+    }));
+    const visEdges = (data.edges || []).map(e => ({ from: e.from, to: e.to, arrows: 'to' }));
+
+    const visData = { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
+    const options = {
+      layout: { improvedLayout: true },
+      physics: { stabilization: true },
+      interaction: { hover: true, navigationButtons: true, keyboard: true }
+    };
+
+    if (network) network.destroy();
+    network = new vis.Network(container, visData, options);
+  }
+
+  document.getElementById('renderBtn').addEventListener('click', () => {
+    renderGraph(document.getElementById('jsonInput').value);
+  });
+
+  document.getElementById('layoutBtn').addEventListener('click', () => {
+    if (!network) return;
+    network.setOptions({ physics: { enabled: true } });
+    setTimeout(() => network.setOptions({ physics: { enabled: false } }), 1200);
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    if (!network) return;
+    const canvas = container.getElementsByTagName('canvas')[0];
+    if (!canvas) return alert('Nothing to download yet.');
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'graph.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  // initial render
+  renderGraph(document.getElementById('jsonInput').value);
+</script>
+</body>
+</html>
